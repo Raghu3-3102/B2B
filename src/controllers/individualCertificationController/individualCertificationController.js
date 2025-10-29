@@ -1,6 +1,6 @@
 import Agent from "../../models/AgentModel/AgentModel.js";
 import Certification from "../../models/individualCertificationModel/individualCertificationModel.js";
-
+import Vendor from "../../models/VendorModel/VendorModel.js";
 // ✅ Create Certification
 export const createIndividualCertification = async (req, res) => {
   try {
@@ -18,6 +18,7 @@ export const createIndividualCertification = async (req, res) => {
       certificationNumber,
       status,
       assignedAgent,
+      assigenedVendor,
       companyPhoneCode,
       companyPhoneNumber,
       alternateEmails,
@@ -48,6 +49,7 @@ export const createIndividualCertification = async (req, res) => {
       certificationNumber,
       status,
       assignedAgent,
+      assigenedVendor,
       attachments,
       logo,
       companyPhoneCode,
@@ -64,6 +66,15 @@ export const createIndividualCertification = async (req, res) => {
         agent.companyCount = (agent.companyCount || 0) + 1;
         agent.IndividualsId = [...(agent.IndividualsId || []), savedCertificate._id];
         await agent.save();
+      }
+    }
+    // Update Vendor
+    if (assigenedVendor) {    
+      const vendor = await Vendor.findById(assigenedVendor);
+      if (vendor) {
+        vendor.companyCount = (vendor.companyCount || 0) + 1;
+        vendor.individualsId = [...(vendor.individualsId || []), savedCertificate._id];
+        await vendor.save();
       }
     }
 
@@ -203,6 +214,17 @@ export const deleteIndividualCertification = async (req, res) => {
         );
         agent.companyCount = Math.max(0, (agent.companyCount || 1) - 1);
         await agent.save();
+      }
+    }
+    // Remove from Vendor’s individualsId list
+    if (certification.assigenedVendor) {
+      const vendor = await Vendor.findById(certification.assigenedVendor);
+      if (vendor) {
+        vendor.individualsId = vendor.individualsId.filter(
+          (id) => String(id) !== String(certification._id)
+        );
+        vendor.companyCount = Math.max(0, (vendor.companyCount || 1) - 1);
+        await vendor.save();
       }
     }
 

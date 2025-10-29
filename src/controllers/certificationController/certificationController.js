@@ -4,6 +4,7 @@ import Agent from "../../models/AgentModel/AgentModel.js";
 import Certification from "../../models/CertificationModel/CertificationModel.js";
 import Company from "../../models/componyModel/ComponyModel.js";
 import IndividualCertification from "../../models/individualCertificationModel/individualCertificationModel.js";
+import Vendor from "../../models/VendorModel/VendorModel.js";
 
 export const createCertification = async (req, res) => {
   try {
@@ -23,6 +24,7 @@ export const createCertification = async (req, res) => {
       certificationNumber,
       status,
       assignedAgent,
+      assigendVendor,
       firstSurveillanceStatus,
       firstSurveillanceNotes,
       secondSurveillanceStatus,
@@ -60,6 +62,7 @@ export const createCertification = async (req, res) => {
       certificationNumber,
       status,
       assignedAgent,
+      assigendVendor,
       attachments,
       logo,
       firstSurveillanceStatus,
@@ -79,6 +82,14 @@ export const createCertification = async (req, res) => {
       agentData.companyCount = (agentData.companyCount || 0) + 1;
       agentData.companyIds = [...(agentData.companyIds || []), savedCertificate._id];
       await agentData.save();
+    }
+
+    // Update Vendor data
+    const vendorData = await Vendor.findById(assigendVendor);
+    if (vendorData) {
+      vendorData.companyCount = (vendorData.companyCount || 0) + 1;
+      vendorData.companyIds = [...(vendorData.companyIds || []), savedCertificate._id];
+      await vendorData.save();
     }
 
     // Create or Update Company data
@@ -408,6 +419,18 @@ export const deleteCertification = async (req, res) => {
           (companyId) => companyId.toString() !== id
         );
         await agent.save();
+      }
+    }
+    // ✅ Update vendor data (decrease count & remove companyId)
+    const vendorId = certification.assigendVendor;
+    if (vendorId) {
+      const vendor = await Vendor.findById(vendorId);
+      if (vendor) {
+        vendor.companyCount = Math.max(0, vendor.companyCount - 1); // prevent negative count
+        vendor.companyIds = vendor.companyIds.filter(
+          (companyId) => companyId.toString() !== id
+        );
+        await vendor.save();
       }
     }
 

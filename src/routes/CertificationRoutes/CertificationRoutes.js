@@ -28,7 +28,7 @@ router.post(
 );
 
 // ✅ Get all certifications (with search, filters & pagination)
-router.get("/get", authMiddleware, getAllCertification);
+router.get("/get",  getAllCertification);
 
 // ✅ Get certification by ID
 router.get("/get/:id", authMiddleware, getCertificationById);

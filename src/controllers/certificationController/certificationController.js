@@ -161,18 +161,32 @@ export const getAllCertification = async (req, res) => {
     const certifications = await Certification.find()
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 }); // latest first
+      .sort({ createdAt: -1 });
 
-    // Attach agent info for each certification
-    const certificationsWithAgent = await Promise.all(
+    // Attach agent + vendor info for each certification
+    const certificationsWithDetails = await Promise.all(
       certifications.map(async cert => {
         let agentInfo = null;
+        let vendorInfo = null;
+
+        // 🔹 Fetch agent info if exists
         if (cert.assignedAgent) {
-          agentInfo = await Agent.findById(cert.assignedAgent).lean();
+          agentInfo = await Agent.findById(cert.assignedAgent)
+            .select("agentName agentEmail agentPhoneNumber") // only fields needed
+            .lean();
         }
+
+        // 🔹 Fetch vendor info if exists
+        if (cert.assigendVendor) {
+          vendorInfo = await Vendor.findById(cert.assigendVendor)
+            .select("vendorName vendorEmail vendorNumber companyCount companyIds")
+            .lean();
+        }
+
         return {
           ...cert.toObject(),
-          assignedAgentInfo: agentInfo
+          assignedAgentInfo: agentInfo,
+          assignedVendorInfo: vendorInfo,  // ✅ Added vendor details
         };
       })
     );
@@ -185,7 +199,7 @@ export const getAllCertification = async (req, res) => {
       page,
       totalPages: Math.ceil(total / limit),
       totalItems: total,
-      certifications: certificationsWithAgent,
+      certifications: certificationsWithDetails,
     });
 
   } catch (error) {
@@ -197,6 +211,7 @@ export const getAllCertification = async (req, res) => {
     });
   }
 };
+
 
 export const getCertificationById = async (req, res) => {
   try {

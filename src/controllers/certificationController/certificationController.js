@@ -217,7 +217,14 @@ export const getCertificationById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const certification = await Certification.findById(id).populate("assignedAgent");
+    const certification = await Certification.findById(id).populate({
+        path: "assignedAgent",
+        select: "agentName agentEmail agentPhoneNumber"
+      })
+      .populate({
+        path: "assigendVendor",
+        select: "vendorName vendorEmail vendorNumber companyCount companyIds"
+      });;
 
     if (!certification) {
       return res.status(404).json({
@@ -370,6 +377,7 @@ export const updateCertification = async (req, res) => {
       alternateEmails: req.body.alternateEmails || existing.alternateEmails, // ✅ Update alternateEmails
       logo: req.files?.logo ? req.files.logo[0].path : existing.logo, // keep old logo if new not uploaded
       attachments: mergedAttachments, // preserve existing + new
+      assigendVendor: req.body.assigendVendor|| existing.assigendVendor, // ✅ Vendor also linked here (if needed)
     };
 
     // Update Certification

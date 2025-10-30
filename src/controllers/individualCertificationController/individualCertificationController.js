@@ -98,7 +98,7 @@ export const createIndividualCertification = async (req, res) => {
 // ✅ Get All Certifications
 export const getAllIndividualCertifications = async (req, res) => {
   try {
-    const certifications = await Certification.find().populate("assignedAgent");
+    const certifications = await Certification.find().populate("assignedAgent").populate("assigendVendor");
     res.status(200).json({
       success: true,
       count: certifications.length,
@@ -118,7 +118,7 @@ export const getAllIndividualCertifications = async (req, res) => {
 // ✅ Get Certification by ID
 export const getIndividualCertificationById = async (req, res) => {
   try {
-    const certification = await Certification.findById(req.params.id).populate("assignedAgent");
+    const certification = await Certification.findById(req.params.id).populate("assignedAgent").populate("assigendVendor");
     if (!certification) {
       return res.status(404).json({ success: false, message: "Certification not found" });
     }
@@ -135,9 +135,10 @@ export const getIndividualCertificationById = async (req, res) => {
 
 
 // ✅ Update Certification
+// ✅ Update Certification
 export const updateIndividualCertification = async (req, res) => {
   try {
-    const { assignedAgent } = req.body;
+    const { assignedAgent, assigenedVendor } = req.body; // <-- Vendor also destructured
     const certificationId = req.params.id;
 
     const existingCertification = await Certification.findById(certificationId);
@@ -145,24 +146,28 @@ export const updateIndividualCertification = async (req, res) => {
       return res.status(404).json({ success: false, message: "Certification not found" });
     }
 
-    // Handle updated files
+    // ✅ Handle updated files
     const attachments =
-      req.files?.attachments?.map((file) => ({
-        fileName: file.originalname,
-        fileUrl: file.path,
-        fileType: file.mimetype,
-      })) || existingCertification.attachments;
+      req.files?.attachments?.length > 0
+        ? req.files.attachments.map((file) => ({
+            fileName: file.originalname,
+            fileUrl: file.path,
+            fileType: file.mimetype,
+          }))
+        : existingCertification.attachments;
 
     const logo = req.files?.logo?.[0]?.path || existingCertification.logo;
 
-    // Update certification
+    // ✅ Update Certification
     const updatedCertification = await Certification.findByIdAndUpdate(
       certificationId,
       { ...req.body, attachments, logo },
       { new: true }
     );
 
-    // If Agent changed → update both old and new
+    /* -----------------------------------------
+          🚀 AGENT UPDATE LOGIC (Already Correct)
+       ------------------------------------------*/
     if (assignedAgent && String(existingCertification.assignedAgent) !== String(assignedAgent)) {
       const oldAgent = await Agent.findById(existingCertification.assignedAgent);
       if (oldAgent) {
@@ -181,12 +186,35 @@ export const updateIndividualCertification = async (req, res) => {
       }
     }
 
+    /* -----------------------------------------
+          ✅ NEW: VENDOR UPDATE LOGIC (Same as Agent)
+       ------------------------------------------*/
+    if (assigenedVendor && String(existingCertification.assigenedVendor) !== String(assigenedVendor)) {
+      const oldVendor = await Vendor.findById(existingCertification.assigenedVendor);
+      if (oldVendor) {
+        oldVendor.individualsId = oldVendor.individualsId.filter(
+          (id) => String(id) !== String(certificationId)
+        );
+        oldVendor.companyCount = Math.max(0, (oldVendor.companyCount || 1) - 1);
+        await oldVendor.save();
+      }
+
+      const newVendor = await Vendor.findById(assigenedVendor);
+      if (newVendor) {
+        newVendor.individualsId = [...(newVendor.individualsId || []), certificationId];
+        newVendor.companyCount = (newVendor.companyCount || 0) + 1;
+        await newVendor.save();
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Certification updated successfully!",
       certification: updatedCertification,
     });
+
   } catch (error) {
+    console.error("❌ Error updating certification:", error);
     res.status(500).json({
       success: false,
       message: "Server error while updating certification",
@@ -194,6 +222,7 @@ export const updateIndividualCertification = async (req, res) => {
     });
   }
 };
+
 
 
 

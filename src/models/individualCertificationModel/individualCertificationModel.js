@@ -46,6 +46,10 @@ const IndividualCertificationSchema = new mongoose.Schema(
     assignedAgent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Agent"
+    },
+    assigendVendor:{
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Vendor"
     }
   },
   { timestamps: true }

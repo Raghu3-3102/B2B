@@ -18,7 +18,7 @@ export const createIndividualCertification = async (req, res) => {
       certificationNumber,
       status,
       assignedAgent,
-      assigenedVendor,
+      assigendVendor,
       companyPhoneCode,
       companyPhoneNumber,
       alternateEmails,
@@ -49,7 +49,7 @@ export const createIndividualCertification = async (req, res) => {
       certificationNumber,
       status,
       assignedAgent,
-      assigenedVendor,
+      assigendVendor,
       attachments,
       logo,
       companyPhoneCode,
@@ -69,8 +69,8 @@ export const createIndividualCertification = async (req, res) => {
       }
     }
     // Update Vendor
-    if (assigenedVendor) {    
-      const vendor = await Vendor.findById(assigenedVendor);
+    if (assigendVendor) {    
+      const vendor = await Vendor.findById(assigendVendor);
       if (vendor) {
         vendor.companyCount = (vendor.companyCount || 0) + 1;
         vendor.individualsId = [...(vendor.individualsId || []), savedCertificate._id];

@@ -41,6 +41,7 @@ export const updateUserProfile = async (req, res) => {
 };
 
 // 🔐 Change password (verify old password before updating)
+// 🔐 Change password (verify old password before updating)
 export const changeUserPassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
@@ -53,9 +54,8 @@ export const changeUserPassword = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ success: false, message: "Incorrect old password" });
 
-    const salt = await bcrypt.genSalt(10);
-    user.userPassword = await bcrypt.hash(newPassword, salt);
-    await user.save();
+    user.userPassword = newPassword; // ✅ Directly assign new password
+    await user.save(); // ✅ Hashing happens automatically in pre("save")
 
     res.status(200).json({ success: true, message: "Password changed successfully" });
   } catch (error) {
